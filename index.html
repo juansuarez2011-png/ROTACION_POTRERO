@@ -54,13 +54,23 @@
             gap: 15px;
         }
 
+        /* Contenedor del logo mejorado con fondo blanco y bordes refinados para PC, móvil y tablet */
+        .header-logo-container {
+            background: #ffffff;
+            border-radius: 10px;
+            padding: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+
         .header-logo {
-            width: 45px;
-            height: 45px;
+            width: 55px;
+            height: 55px;
             object-fit: contain;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            padding: 4px;
+            display: block;
         }
 
         header h1 {
@@ -215,19 +225,23 @@
             body { padding: 8px; }
             header { padding: 12px 15px; }
             .control-panel { padding: 15px; }
+            header h1 { font-size: 1.1rem; }
+            .header-logo { width: 45px; height: 45px; }
         }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <!-- Encabezado con Logo integrado -->
+        <!-- Encabezado con Logo integrado, fondo elegante y mayor tamaño responsivo -->
         <header>
             <div class="header-brand">
-                <img src="logo.png" alt="Logo" class="header-logo" onerror="this.style.display='none'">
+                <div class="header-logo-container">
+                    <img src="logo.png" alt="Logo" class="header-logo" onerror="this.parentElement.style.display='none'">
+                </div>
                 <h1>🌾 Control de Rotación y Mantenimiento de Potreros</h1>
             </div>
-            <div class="status-badge">🟢 Sistema Local Activo</div>
+            <div class="status-badge" id="badge-estado">🟢 Sistema Local Activo</div>
         </header>
 
         <!-- Formulario Simplificado y Sincronizado -->
@@ -236,8 +250,13 @@
             <form id="rotacion-form">
                 <div class="form-grid">
                     <div class="form-group">
-                        <label for="fecha">Fecha</label>
-                        <input type="date" id="fecha" required>
+                        <label for="fecha-inicio">Fecha de Inicio</label>
+                        <input type="date" id="fecha-inicio" onchange="calcularFechaFin()" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="fecha-fin">Fecha Final (Demo 30D)</label>
+                        <input type="date" id="fecha-fin" required>
                     </div>
                     
                     <div class="form-group">
@@ -294,7 +313,8 @@
                 <table>
                     <thead>
                         <tr>
-                            <th>Fecha</th>
+                            <th>Fecha Inicio</th>
+                            <th>Fecha Final (Demo 30D)</th>
                             <th>N° Potrero</th>
                             <th>Área</th>
                             <th>Lote</th>
@@ -312,11 +332,18 @@
 
         <!-- Ventana de Logs Compacta -->
         <div class="log-box" id="log-box">
-            <div class="log-entry">[Sistema] Interfaz sincronizada con soporte para logo.png cargado en GitHub.</div>
+            <div class="log-entry">[Sistema] Interfaz optimizada con contenedor de logo estético para PC, tablet y móvil.</div>
         </div>
     </div>
 
     <script>
+        // ============ FILTRO DE FECHAS INTERNO (NO VISIBLE) ============
+        // Cambia estos valores para filtrar los registros automáticamente en la tabla.
+        // Formato: 'YYYY-MM-DD'. Pon null para no aplicar filtro.
+        const FECHA_INICIO = null;   // Ej: '2026-01-01' o null para ver todo
+        const FECHA_FIN    = null;   // Ej: '2026-12-31' o null para ver todo
+        // ===============================================================
+
         // Registro en Log
         function addLog(message) {
             const logBox = document.getElementById('log-box');
@@ -325,12 +352,29 @@
             logBox.scrollTop = logBox.scrollHeight;
         }
 
-        // Cargar fecha actual por defecto
-        document.getElementById('fecha').valueAsDate = new Date();
+        // Función para calcular automáticamente la fecha final sumando 30 días (Demo)
+        function calcularFechaFin() {
+            let inputInicio = document.getElementById('fecha-inicio').value;
+            if (inputInicio) {
+                let fecha = new Date(inputInicio + 'T00:00:00');
+                fecha.setDate(fecha.getDate() + 30);
+                
+                let anio = fecha.getFullYear();
+                let mes = String(fecha.getMonth() + 1).padStart(2, '0');
+                let dia = String(fecha.getDate()).padStart(2, '0');
+                
+                document.getElementById('fecha-fin').value = `${anio}-${mes}-${dia}`;
+            }
+        }
+
+        // Cargar fecha actual por defecto y calcular los 30 días automáticamente al iniciar
+        const hoy = new Date();
+        document.getElementById('fecha-inicio').valueAsDate = hoy;
+        calcularFechaFin();
 
         // Obtener lista única de potreros guardados en la memoria
         function obtenerPotrerosGuardados() {
-            let registros = JSON.parse(localStorage.getItem('registros_potreros_v4')) || [];
+            let registros = JSON.parse(localStorage.getItem('registros_potreros_v7')) || [];
             let potrerosMap = {};
             
             registros.forEach(r => {
@@ -399,25 +443,37 @@
             }
         }
 
-        // Cargar y sincronizar la tabla de registros desde LocalStorage
+        // Cargar y sincronizar la tabla aplicando el filtro de fechas interno
         function cargarRegistros() {
-            let registros = JSON.parse(localStorage.getItem('registros_potreros_v4')) || [];
+            let registros = JSON.parse(localStorage.getItem('registros_potreros_v7')) || [];
+            
+            // Aplicar filtro interno si está configurado
+            let registrosFiltrados = registros.filter(reg => {
+                if (FECHA_INICIO && reg.fechaInicio < FECHA_INICIO) return false;
+                if (FECHA_FIN && reg.fechaInicio > FECHA_FIN) return false;
+                return true;
+            });
+
             const tbody = document.getElementById('tabla-registros');
             tbody.innerHTML = '';
 
-            if(registros.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color: #94a3b8; padding: 20px;">No hay registros guardados aún. Complete el formulario superior.</td></tr>`;
+            if(registrosFiltrados.length === 0) {
+                let mensaje = registros.length === 0 ? "No hay registros guardados aún. Complete el formulario superior." : "No hay registros en el rango de fechas del filtro interno.";
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color: #94a3b8; padding: 20px;">${mensaje}</td></tr>`;
             } else {
-                registros.forEach((reg, index) => {
+                registrosFiltrados.forEach((reg) => {
+                    let realIndex = registros.findIndex(r => r.fechaInicio === reg.fechaInicio && r.potrero === reg.potrero && r.lote === reg.lote);
+                    
                     let tr = document.createElement('tr');
                     tr.innerHTML = `
-                        <td>${reg.fecha}</td>
+                        <td>${reg.fechaInicio}</td>
+                        <td>${reg.fechaFin}</td>
                         <td><strong>${reg.potrero}</strong></td>
                         <td>${reg.area}</td>
                         <td>${reg.lote}</td>
                         <td><span style="padding: 4px 10px; border-radius: 6px; background: #ccfbf1; color: #115e59; font-weight: 500; font-size: 0.85rem;">${reg.rotacion}</span></td>
                         <td>${reg.tareas || 'Ninguna'}</td>
-                        <td style="text-align: center;"><button onclick="eliminarRegistro(${index})" style="padding: 4px 10px; background: #ef4444; font-size: 0.8rem; box-shadow: none;">❌</button></td>
+                        <td style="text-align: center;"><button onclick="eliminarRegistro(${realIndex})" style="padding: 4px 10px; background: #ef4444; font-size: 0.8rem; box-shadow: none;">❌</button></td>
                     `;
                     tbody.appendChild(tr);
                 });
@@ -434,7 +490,8 @@
             let nombrePotrero = (selectVal === "NUEVO") ? document.getElementById('potrero-nuevo').value.trim() : selectVal;
 
             let nuevoRegistro = {
-                fecha: document.getElementById('fecha').value,
+                fechaInicio: document.getElementById('fecha-inicio').value,
+                fechaFin: document.getElementById('fecha-fin').value,
                 potrero: nombrePotrero,
                 area: document.getElementById('area').value.trim(),
                 lote: document.getElementById('lote').value.trim(),
@@ -442,14 +499,15 @@
                 tareas: document.getElementById('tareas').value.trim()
             };
 
-            let registros = JSON.parse(localStorage.getItem('registros_potreros_v4')) || [];
+            let registros = JSON.parse(localStorage.getItem('registros_potreros_v7')) || [];
             registros.unshift(nuevoRegistro);
-            localStorage.setItem('registros_potreros_v4', JSON.stringify(registros));
+            localStorage.setItem('registros_potreros_v7', JSON.stringify(registros));
 
-            addLog(`Registro guardado: Potrero ${nombrePotrero} | ${nuevoRegistro.rotacion}`);
+            addLog(`Registro guardado: Potrero ${nombrePotrero} (Demo 30D: ${nuevoRegistro.fechaInicio} al ${nuevoRegistro.fechaFin})`);
             cargarRegistros();
             
-            // Mantener fecha actual y limpiar campos específicos sin perder sincronía
+            document.getElementById('fecha-inicio').valueAsDate = new Date();
+            calcularFechaFin();
             document.getElementById('tareas').value = '';
             if(selectVal === "NUEVO") {
                 document.getElementById('potrero-nuevo').value = '';
@@ -459,9 +517,9 @@
 
         // Eliminar registro individual y sincronizar
         function eliminarRegistro(index) {
-            let registros = JSON.parse(localStorage.getItem('registros_potreros_v4')) || [];
+            let registros = JSON.parse(localStorage.getItem('registros_potreros_v7')) || [];
             let eliminado = registros.splice(index, 1);
-            localStorage.setItem('registros_potreros_v4', JSON.stringify(registros));
+            localStorage.setItem('registros_potreros_v7', JSON.stringify(registros));
             addLog(`Registro eliminado: Potrero ${eliminado[0].potrero}`);
             cargarRegistros();
         }
@@ -469,7 +527,7 @@
         // Borrar toda la base de datos local
         function limpiarDatos() {
             if(confirm("¿Está seguro de borrar todos los registros y la memoria de potreros?")) {
-                localStorage.removeItem('registros_potreros_v4');
+                localStorage.removeItem('registros_potreros_v7');
                 addLog("Memoria local borrada por el usuario.");
                 cargarRegistros();
             }
@@ -477,15 +535,15 @@
 
         // Exportar a CSV
         function exportarCSV() {
-            let registros = JSON.parse(localStorage.getItem('registros_potreros_v4')) || [];
+            let registros = JSON.parse(localStorage.getItem('registros_potreros_v7')) || [];
             if(registros.length === 0) {
                 alert("No hay datos para exportar.");
                 return;
             }
 
-            let csvContent = "data:text/csv;charset=utf-8,Fecha,Potrero,Area,Lote,Accion_Rotacion_Mantenimiento,Tareas\n";
+            let csvContent = "data:text/csv;charset=utf-8,Fecha_Inicio,Fecha_Final_Demo_30D,Potrero,Area,Lote,Accion_Rotacion_Mantenimiento,Tareas\n";
             registros.forEach(r => {
-                csvContent += `"${r.fecha}","${r.potrero}","${r.area}","${r.lote}","${r.rotacion}","${r.tareas}"\n`;
+                csvContent += `"${r.fechaInicio}","${r.fechaFin}","${r.potrero}","${r.area}","${r.lote}","${r.rotacion}","${r.tareas}"\n`;
             });
 
             let encodedUri = encodeURI(csvContent);
