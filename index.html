@@ -54,7 +54,6 @@
             gap: 15px;
         }
 
-        /* Contenedor del logo mejorado con fondo blanco y bordes refinados para PC, móvil y tablet */
         .header-logo-container {
             background: #ffffff;
             border-radius: 10px;
@@ -86,7 +85,6 @@
             backdrop-filter: blur(5px);
         }
 
-        /* Panel de Control unificado y simplificado */
         .control-panel {
             background: white;
             padding: 20px;
@@ -165,7 +163,6 @@
             background-color: #334155;
         }
 
-        /* Estilo Hoja de Cálculo Sincronizada (Tabla) */
         .sheet-container {
             background: white;
             border-radius: 12px;
@@ -204,7 +201,6 @@
             background-color: #f8fafc;
         }
 
-        /* Log minimalista y ordenado */
         .log-box {
             background: #0f172a;
             color: #38bdf8;
@@ -233,7 +229,6 @@
 <body>
 
     <div class="container">
-        <!-- Encabezado con Logo integrado, fondo elegante y mayor tamaño responsivo -->
         <header>
             <div class="header-brand">
                 <div class="header-logo-container">
@@ -244,20 +239,16 @@
             <div class="status-badge" id="badge-estado">🟢 Sistema Local Activo</div>
         </header>
 
-        <!-- Formulario Simplificado y Sincronizado -->
         <div class="control-panel">
             <h3 style="margin-bottom: 12px; color: var(--primary); font-size: 1.05rem; font-weight: 600;">📝 Registro Rápido de Campo</h3>
             <form id="rotacion-form">
                 <div class="form-grid">
                     <div class="form-group">
-                        <label for="fecha-inicio">Fecha de Inicio</label>
-                        <input type="date" id="fecha-inicio" onchange="calcularFechaFin()" required>
+                        <label for="fecha-inicio">Fecha de Inicio (Evento)</label>
+                        <input type="date" id="fecha-inicio" required>
                     </div>
 
-                    <div class="form-group">
-                        <label for="fecha-fin">Fecha Final (Demo 30D)</label>
-                        <input type="date" id="fecha-fin" required>
-                    </div>
+                    <!-- El campo Fecha Final ya no está visible para el usuario; se calcula internamente con los días de demo -->
                     
                     <div class="form-group">
                         <label for="potrero-select">Potrero (Seleccionar o Nuevo)</label>
@@ -266,7 +257,6 @@
                         </select>
                     </div>
 
-                    <!-- Input dinámico que aparece limpiamente al elegir nuevo -->
                     <div class="form-group" id="nuevo-potrero-group" style="display: none;">
                         <label for="potrero-nuevo">Nombre / Código del Nuevo Potrero</label>
                         <input type="text" id="potrero-nuevo" placeholder="Ej. Potrero 05">
@@ -307,14 +297,13 @@
             </form>
         </div>
 
-        <!-- Vista de Tabla Tipo Hoja de Cálculo Sincronizada -->
         <div class="sheet-container">
             <div class="table-responsive">
                 <table>
                     <thead>
                         <tr>
                             <th>Fecha Inicio</th>
-                            <th>Fecha Final (Demo 30D)</th>
+                            <th>Fecha Final (Demo)</th>
                             <th>N° Potrero</th>
                             <th>Área</th>
                             <th>Lote</th>
@@ -330,21 +319,23 @@
             </div>
         </div>
 
-        <!-- Ventana de Logs Compacta -->
         <div class="log-box" id="log-box">
-            <div class="log-entry">[Sistema] Interfaz optimizada con contenedor de logo estético para PC, tablet y móvil.</div>
+            <div class="log-entry">[Sistema] Configuración interna de demo de 30 días establecida por el programador.</div>
         </div>
     </div>
 
     <script>
-        // ============ FILTRO DE FECHAS INTERNO (NO VISIBLE) ============
-        // Cambia estos valores para filtrar los registros automáticamente en la tabla.
-        // Formato: 'YYYY-MM-DD'. Pon null para no aplicar filtro.
-        const FECHA_INICIO = null;   // Ej: '2026-01-01' o null para ver todo
-        const FECHA_FIN    = null;   // Ej: '2026-12-31' o null para ver todo
-        // ===============================================================
+        // =========================================================================
+        // CONFIGURACIÓN INTERNA PARA EL PROGRAMADOR (NO VISIBLE EN EL FORMULARIO)
+        // =========================================================================
+        // Cambia aquí los días de duración del demo o configura fechas fijas si lo deseas.
+        const DIAS_DEMO = 30; 
 
-        // Registro en Log
+        // Filtro de fechas opcional para la tabla (Pon 'YYYY-MM-DD' o null para ver todo)
+        const FECHA_INICIO_FILTRO = null;   
+        const FECHA_FIN_FILTRO    = null;   
+        // =========================================================================
+
         function addLog(message) {
             const logBox = document.getElementById('log-box');
             const time = new Date().toLocaleTimeString();
@@ -352,29 +343,24 @@
             logBox.scrollTop = logBox.scrollHeight;
         }
 
-        // Función para calcular automáticamente la fecha final sumando 30 días (Demo)
-        function calcularFechaFin() {
-            let inputInicio = document.getElementById('fecha-inicio').value;
-            if (inputInicio) {
-                let fecha = new Date(inputInicio + 'T00:00:00');
-                fecha.setDate(fecha.getDate() + 30);
-                
-                let anio = fecha.getFullYear();
-                let mes = String(fecha.getMonth() + 1).padStart(2, '0');
-                let dia = String(fecha.getDate()).padStart(2, '0');
-                
-                document.getElementById('fecha-fin').value = `${anio}-${mes}-${dia}`;
-            }
+        // Función interna para calcular la fecha final sumando automáticamente los días del demo configurados
+        function calcularFechaFinInterna(fechaInicioStr) {
+            let fecha = new Date(fechaInicioStr + 'T00:00:00');
+            fecha.setDate(fecha.getDate() + DIAS_DEMO);
+            
+            let anio = fecha.getFullYear();
+            let mes = String(fecha.getMonth() + 1).padStart(2, '0');
+            let dia = String(fecha.getDate()).padStart(2, '0');
+            
+            return `${anio}-${mes}-${dia}`;
         }
 
-        // Cargar fecha actual por defecto y calcular los 30 días automáticamente al iniciar
+        // Cargar fecha actual por defecto en el campo visible de inicio
         const hoy = new Date();
         document.getElementById('fecha-inicio').valueAsDate = hoy;
-        calcularFechaFin();
 
-        // Obtener lista única de potreros guardados en la memoria
         function obtenerPotrerosGuardados() {
-            let registros = JSON.parse(localStorage.getItem('registros_potreros_v7')) || [];
+            let registros = JSON.parse(localStorage.getItem('registros_potreros_v8')) || [];
             let potrerosMap = {};
             
             registros.forEach(r => {
@@ -384,7 +370,6 @@
             return potrerosMap;
         }
 
-        // Actualizar el menú desplegable del formulario de manera sincronizada
         function actualizarSelectorPotreros() {
             let select = document.getElementById('potrero-select');
             let potrerosMap = obtenerPotrerosGuardados();
@@ -443,14 +428,12 @@
             }
         }
 
-        // Cargar y sincronizar la tabla aplicando el filtro de fechas interno
         function cargarRegistros() {
-            let registros = JSON.parse(localStorage.getItem('registros_potreros_v7')) || [];
+            let registros = JSON.parse(localStorage.getItem('registros_potreros_v8')) || [];
             
-            // Aplicar filtro interno si está configurado
             let registrosFiltrados = registros.filter(reg => {
-                if (FECHA_INICIO && reg.fechaInicio < FECHA_INICIO) return false;
-                if (FECHA_FIN && reg.fechaInicio > FECHA_FIN) return false;
+                if (FECHA_INICIO_FILTRO && reg.fechaInicio < FECHA_INICIO_FILTRO) return false;
+                if (FECHA_FIN_FILTRO && reg.fechaInicio > FECHA_FIN_FILTRO) return false;
                 return true;
             });
 
@@ -482,16 +465,19 @@
             actualizarSelectorPotreros();
         }
 
-        // Guardar un nuevo registro sincronizado
         document.getElementById('rotacion-form').addEventListener('submit', function(e) {
             e.preventDefault();
             
             let selectVal = document.getElementById('potrero-select').value;
             let nombrePotrero = (selectVal === "NUEVO") ? document.getElementById('potrero-nuevo').value.trim() : selectVal;
+            let fechaInicioVal = document.getElementById('fecha-inicio').value;
+            
+            // Cálculo automático interno de la fecha final del demo
+            let fechaFinCalculada = calcularFechaFinInterna(fechaInicioVal);
 
             let nuevoRegistro = {
-                fechaInicio: document.getElementById('fecha-inicio').value,
-                fechaFin: document.getElementById('fecha-fin').value,
+                fechaInicio: fechaInicioVal,
+                fechaFin: fechaFinCalculada,
                 potrero: nombrePotrero,
                 area: document.getElementById('area').value.trim(),
                 lote: document.getElementById('lote').value.trim(),
@@ -499,15 +485,14 @@
                 tareas: document.getElementById('tareas').value.trim()
             };
 
-            let registros = JSON.parse(localStorage.getItem('registros_potreros_v7')) || [];
+            let registros = JSON.parse(localStorage.getItem('registros_potreros_v8')) || [];
             registros.unshift(nuevoRegistro);
-            localStorage.setItem('registros_potreros_v7', JSON.stringify(registros));
+            localStorage.setItem('registros_potreros_v8', JSON.stringify(registros));
 
-            addLog(`Registro guardado: Potrero ${nombrePotrero} (Demo 30D: ${nuevoRegistro.fechaInicio} al ${nuevoRegistro.fechaFin})`);
+            addLog(`Registro guardado: Potrero ${nombrePotrero} (Demo ${DIAS_DEMO}D: ${nuevoRegistro.fechaInicio} al ${nuevoRegistro.fechaFin})`);
             cargarRegistros();
             
             document.getElementById('fecha-inicio').valueAsDate = new Date();
-            calcularFechaFin();
             document.getElementById('tareas').value = '';
             if(selectVal === "NUEVO") {
                 document.getElementById('potrero-nuevo').value = '';
@@ -515,33 +500,30 @@
             }
         });
 
-        // Eliminar registro individual y sincronizar
         function eliminarRegistro(index) {
-            let registros = JSON.parse(localStorage.getItem('registros_potreros_v7')) || [];
+            let registros = JSON.parse(localStorage.getItem('registros_potreros_v8')) || [];
             let eliminado = registros.splice(index, 1);
-            localStorage.setItem('registros_potreros_v7', JSON.stringify(registros));
+            localStorage.setItem('registros_potreros_v8', JSON.stringify(registros));
             addLog(`Registro eliminado: Potrero ${eliminado[0].potrero}`);
             cargarRegistros();
         }
 
-        // Borrar toda la base de datos local
         function limpiarDatos() {
             if(confirm("¿Está seguro de borrar todos los registros y la memoria de potreros?")) {
-                localStorage.removeItem('registros_potreros_v7');
+                localStorage.removeItem('registros_potreros_v8');
                 addLog("Memoria local borrada por el usuario.");
                 cargarRegistros();
             }
         }
 
-        // Exportar a CSV
         function exportarCSV() {
-            let registros = JSON.parse(localStorage.getItem('registros_potreros_v7')) || [];
+            let registros = JSON.parse(localStorage.getItem('registros_potreros_v8')) || [];
             if(registros.length === 0) {
                 alert("No hay datos para exportar.");
                 return;
             }
 
-            let csvContent = "data:text/csv;charset=utf-8,Fecha_Inicio,Fecha_Final_Demo_30D,Potrero,Area,Lote,Accion_Rotacion_Mantenimiento,Tareas\n";
+            let csvContent = "data:text/csv;charset=utf-8,Fecha_Inicio,Fecha_Final_Demo,Potrero,Area,Lote,Accion_Rotacion_Mantenimiento,Tareas\n";
             registros.forEach(r => {
                 csvContent += `"${r.fechaInicio}","${r.fechaFin}","${r.potrero}","${r.area}","${r.lote}","${r.rotacion}","${r.tareas}"\n`;
             });
