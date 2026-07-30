@@ -45,7 +45,22 @@
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 15px;
+        }
+
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header-logo {
+            width: 45px;
+            height: 45px;
+            object-fit: contain;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 4px;
         }
 
         header h1 {
@@ -206,9 +221,12 @@
 <body>
 
     <div class="container">
-        <!-- Encabezado Limpio -->
+        <!-- Encabezado con Logo integrado -->
         <header>
-            <h1>🌾 Control de Rotación y Mantenimiento de Potreros</h1>
+            <div class="header-brand">
+                <img src="logo.png" alt="Logo" class="header-logo" onerror="this.style.display='none'">
+                <h1>🌾 Control de Rotación y Mantenimiento de Potreros</h1>
+            </div>
             <div class="status-badge">🟢 Sistema Local Activo</div>
         </header>
 
@@ -294,7 +312,7 @@
 
         <!-- Ventana de Logs Compacta -->
         <div class="log-box" id="log-box">
-            <div class="log-entry">[Sistema] Interfaz simplificada y sincronizada correctamente en modo local.</div>
+            <div class="log-entry">[Sistema] Interfaz sincronizada con soporte para logo.png cargado en GitHub.</div>
         </div>
     </div>
 
