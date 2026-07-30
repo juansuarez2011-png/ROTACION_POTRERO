@@ -244,12 +244,10 @@
             <form id="rotacion-form">
                 <div class="form-grid">
                     <div class="form-group">
-                        <label for="fecha-inicio">Fecha de Inicio (Evento)</label>
+                        <label for="fecha-inicio">Fecha</label>
                         <input type="date" id="fecha-inicio" required>
                     </div>
 
-                    <!-- El campo Fecha Final ya no está visible para el usuario; se calcula internamente con los días de demo -->
-                    
                     <div class="form-group">
                         <label for="potrero-select">Potrero (Seleccionar o Nuevo)</label>
                         <select id="potrero-select" onchange="verificarNuevoPotrero(this.value)" required>
@@ -302,8 +300,8 @@
                 <table>
                     <thead>
                         <tr>
-                            <th>Fecha Inicio</th>
-                            <th>Fecha Final (Demo)</th>
+                            <th>Fecha</th>
+                            <th>Lapso Demo (Interno)</th>
                             <th>N° Potrero</th>
                             <th>Área</th>
                             <th>Lote</th>
@@ -320,20 +318,19 @@
         </div>
 
         <div class="log-box" id="log-box">
-            <div class="log-entry">[Sistema] Configuración interna de demo de 30 días establecida por el programador.</div>
+            <div class="log-entry">[Sistema] Lapso de demo configurado internamente por el programador.</div>
         </div>
     </div>
 
     <script>
         // =========================================================================
-        // CONFIGURACIÓN INTERNA PARA EL PROGRAMADOR (NO VISIBLE EN EL FORMULARIO)
+        // CONFIGURACIÓN INTERNA DEL LAPSO DE DEMO (MODIFICABLE SOLO POR EL PROGRAMADOR)
         // =========================================================================
-        // Cambia aquí los días de duración del demo o configura fechas fijas si lo deseas.
-        const DIAS_DEMO = 30; 
+        const LAPSO_DEMO_INICIO = '2026-07-01'; // Fecha de inicio del lapso de demo interno
+        const LAPSO_DEMO_FIN    = '2026-12-31'; // Fecha de cierre del lapso de demo interno
 
-        // Filtro de fechas opcional para la tabla (Pon 'YYYY-MM-DD' o null para ver todo)
-        const FECHA_INICIO_FILTRO = 2026-07-30   
-        const FECHA_FIN_FILTRO    = 2026-08-30;   
+        // Filtro opcional para la tabla basado en este lapso interno (true/false)
+        const APLICAR_FILTRO_LAPSO = false; 
         // =========================================================================
 
         function addLog(message) {
@@ -343,24 +340,12 @@
             logBox.scrollTop = logBox.scrollHeight;
         }
 
-        // Función interna para calcular la fecha final sumando automáticamente los días del demo configurados
-        function calcularFechaFinInterna(fechaInicioStr) {
-            let fecha = new Date(fechaInicioStr + 'T00:00:00');
-            fecha.setDate(fecha.getDate() + DIAS_DEMO);
-            
-            let anio = fecha.getFullYear();
-            let mes = String(fecha.getMonth() + 1).padStart(2, '0');
-            let dia = String(fecha.getDate()).padStart(2, '0');
-            
-            return `${anio}-${mes}-${dia}`;
-        }
-
-        // Cargar fecha actual por defecto en el campo visible de inicio
+        // Cargar fecha actual por defecto en el campo de fecha único
         const hoy = new Date();
         document.getElementById('fecha-inicio').valueAsDate = hoy;
 
         function obtenerPotrerosGuardados() {
-            let registros = JSON.parse(localStorage.getItem('registros_potreros_v8')) || [];
+            let registros = JSON.parse(localStorage.getItem('registros_potreros_v9')) || [];
             let potrerosMap = {};
             
             registros.forEach(r => {
@@ -429,11 +414,12 @@
         }
 
         function cargarRegistros() {
-            let registros = JSON.parse(localStorage.getItem('registros_potreros_v8')) || [];
+            let registros = JSON.parse(localStorage.getItem('registros_potreros_v9')) || [];
             
             let registrosFiltrados = registros.filter(reg => {
-                if (FECHA_INICIO_FILTRO && reg.fechaInicio < FECHA_INICIO_FILTRO) return false;
-                if (FECHA_FIN_FILTRO && reg.fechaInicio > FECHA_FIN_FILTRO) return false;
+                if (APLICAR_FILTRO_LAPSO) {
+                    if (reg.fecha < LAPSO_DEMO_INICIO || reg.fecha > LAPSO_DEMO_FIN) return false;
+                }
                 return true;
             });
 
@@ -441,16 +427,16 @@
             tbody.innerHTML = '';
 
             if(registrosFiltrados.length === 0) {
-                let mensaje = registros.length === 0 ? "No hay registros guardados aún. Complete el formulario superior." : "No hay registros en el rango de fechas del filtro interno.";
+                let mensaje = registros.length === 0 ? "No hay registros guardados aún. Complete el formulario superior." : "No hay registros en el lapso de demo configurado.";
                 tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color: #94a3b8; padding: 20px;">${mensaje}</td></tr>`;
             } else {
                 registrosFiltrados.forEach((reg) => {
-                    let realIndex = registros.findIndex(r => r.fechaInicio === reg.fechaInicio && r.potrero === reg.potrero && r.lote === reg.lote);
+                    let realIndex = registros.findIndex(r => r.fecha === reg.fecha && r.potrero === reg.potrero && r.lote === reg.lote);
                     
                     let tr = document.createElement('tr');
                     tr.innerHTML = `
-                        <td>${reg.fechaInicio}</td>
-                        <td>${reg.fechaFin}</td>
+                        <td>${reg.fecha}</td>
+                        <td><span style="color: #0d9488; font-family: monospace; font-size: 0.85rem;">${LAPSO_DEMO_INICIO} al ${LAPSO_DEMO_FIN}</span></td>
                         <td><strong>${reg.potrero}</strong></td>
                         <td>${reg.area}</td>
                         <td>${reg.lote}</td>
@@ -470,14 +456,11 @@
             
             let selectVal = document.getElementById('potrero-select').value;
             let nombrePotrero = (selectVal === "NUEVO") ? document.getElementById('potrero-nuevo').value.trim() : selectVal;
-            let fechaInicioVal = document.getElementById('fecha-inicio').value;
-            
-            // Cálculo automático interno de la fecha final del demo
-            let fechaFinCalculada = calcularFechaFinInterna(fechaInicioVal);
+            let fechaVal = document.getElementById('fecha-inicio').value;
 
             let nuevoRegistro = {
-                fechaInicio: fechaInicioVal,
-                fechaFin: fechaFinCalculada,
+                fecha: fechaVal,
+                lapsoDemo: `${LAPSO_DEMO_INICIO} al ${LAPSO_DEMO_FIN}`,
                 potrero: nombrePotrero,
                 area: document.getElementById('area').value.trim(),
                 lote: document.getElementById('lote').value.trim(),
@@ -485,11 +468,11 @@
                 tareas: document.getElementById('tareas').value.trim()
             };
 
-            let registros = JSON.parse(localStorage.getItem('registros_potreros_v8')) || [];
+            let registros = JSON.parse(localStorage.getItem('registros_potreros_v9')) || [];
             registros.unshift(nuevoRegistro);
-            localStorage.setItem('registros_potreros_v8', JSON.stringify(registros));
+            localStorage.setItem('registros_potreros_v9', JSON.stringify(registros));
 
-            addLog(`Registro guardado: Potrero ${nombrePotrero} (Demo ${DIAS_DEMO}D: ${nuevoRegistro.fechaInicio} al ${nuevoRegistro.fechaFin})`);
+            addLog(`Registro guardado: Potrero ${nombrePotrero} con fecha ${fechaVal} (Lapso Demo interno activo)`);
             cargarRegistros();
             
             document.getElementById('fecha-inicio').valueAsDate = new Date();
@@ -501,31 +484,31 @@
         });
 
         function eliminarRegistro(index) {
-            let registros = JSON.parse(localStorage.getItem('registros_potreros_v8')) || [];
+            let registros = JSON.parse(localStorage.getItem('registros_potreros_v9')) || [];
             let eliminado = registros.splice(index, 1);
-            localStorage.setItem('registros_potreros_v8', JSON.stringify(registros));
+            localStorage.setItem('registros_potreros_v9', JSON.stringify(registros));
             addLog(`Registro eliminado: Potrero ${eliminado[0].potrero}`);
             cargarRegistros();
         }
 
         function limpiarDatos() {
             if(confirm("¿Está seguro de borrar todos los registros y la memoria de potreros?")) {
-                localStorage.removeItem('registros_potreros_v8');
+                localStorage.removeItem('registros_potreros_v9');
                 addLog("Memoria local borrada por el usuario.");
                 cargarRegistros();
             }
         }
 
         function exportarCSV() {
-            let registros = JSON.parse(localStorage.getItem('registros_potreros_v8')) || [];
+            let registros = JSON.parse(localStorage.getItem('registros_potreros_v9')) || [];
             if(registros.length === 0) {
                 alert("No hay datos para exportar.");
                 return;
             }
 
-            let csvContent = "data:text/csv;charset=utf-8,Fecha_Inicio,Fecha_Final_Demo,Potrero,Area,Lote,Accion_Rotacion_Mantenimiento,Tareas\n";
+            let csvContent = "data:text/csv;charset=utf-8,Fecha,Lapso_Demo_Interno,Potrero,Area,Lote,Accion_Rotacion_Mantenimiento,Tareas\n";
             registros.forEach(r => {
-                csvContent += `"${r.fechaInicio}","${r.fechaFin}","${r.potrero}","${r.area}","${r.lote}","${r.rotacion}","${r.tareas}"\n`;
+                csvContent += `"${r.fecha}","${r.lapsoDemo}","${r.potrero}","${r.area}","${r.lote}","${r.rotacion}","${r.tareas}"\n`;
             });
 
             let encodedUri = encodeURI(csvContent);
